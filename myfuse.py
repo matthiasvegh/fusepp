@@ -46,9 +46,14 @@ class Passthrough(fuse.Operations):
         if path == "/ASDF":
             subprocess.call("/home/phil/sandbox/fusecmd.sh > /tmp/.output", shell=True)
             full_path = '/tmp/.output'
+            try:
+                st = self.tmpresult
+            except AttributeError:
+                self.tmpresult = os.lstat(full_path)
+                st = self.tmpresult
         else:
             full_path = self._full_path(path)
-        st = os.lstat(full_path)
+            st = os.lstat(full_path)
         return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
                      'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
