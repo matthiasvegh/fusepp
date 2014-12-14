@@ -50,7 +50,7 @@ class Passthrough(fuse.Operations):
 
     def getattr(self, path, fh=None):
         if path.startswith("/@@@@"):
-            full_path = self._full_path('/'+path[5:])
+            full_path = self._full_path(path[5:])
         else:
             full_path = self._full_path(path)
         st = os.lstat(full_path)
