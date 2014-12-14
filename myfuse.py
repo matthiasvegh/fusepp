@@ -14,7 +14,11 @@ import fuse
 
 
 def runcommand(path):
-    subprocess.call("/home/phil/sandbox/fusecmd.sh " + path[5:] + " > /tmp/.output", shell=True)
+    print path
+    print path[5:]
+    cmd = "gcc -E -xc++-header " + path[5:] + " -o - > /tmp/.output"
+    print cmd
+    subprocess.call(cmd, shell=True)
     return "/tmp/.output"
 
 
@@ -49,19 +53,17 @@ class Passthrough(fuse.Operations):
 
     def getattr(self, path, fh=None):
         if path.startswith("/@@@@"):
-            full_path = runcommand(path)
-            try:
-                st = self.tmpresult
-            except AttributeError:
-                self.tmpresult = os.lstat(full_path)
-                st = self.tmpresult
+            full_path = self._full_path('/'+path[5:])
         else:
             full_path = self._full_path(path)
-            st = os.lstat(full_path)
+        st = os.lstat(full_path)
         return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
                      'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
     def readdir(self, path, fh):
+        if path.startswith("@@@@"):
+            print 'substitute path', path, "->", path[5:]
+            path = '/'+path[5:]
         full_path = self._full_path(path)
 
         dirents = ['.', '..']
