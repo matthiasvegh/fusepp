@@ -13,6 +13,11 @@ import fuse
 #from fuse import Fuse, FuseOSError
 
 
+def runcommand(path):
+    subprocess.call("/home/phil/sandbox/fusecmd.sh " + path[5:] + " > /tmp/.output", shell=True)
+    return "/tmp/.output"
+
+
 class Passthrough(fuse.Operations):
     def __init__(self, root):
         self.root = root
@@ -43,9 +48,8 @@ class Passthrough(fuse.Operations):
         return os.chown(full_path, uid, gid)
 
     def getattr(self, path, fh=None):
-        if path == "/ASDF":
-            subprocess.call("/home/phil/sandbox/fusecmd.sh > /tmp/.output", shell=True)
-            full_path = '/tmp/.output'
+        if path.startswith("/@@@@"):
+            full_path = runcommand(path)
             try:
                 st = self.tmpresult
             except AttributeError:
@@ -110,9 +114,9 @@ class Passthrough(fuse.Operations):
     # ============
 
     def open(self, path, flags):
-        if path == "/ASDF":
-            subprocess.call("/home/phil/sandbox/fusecmd.sh > /tmp/.output", shell=True)
-            return os.open('/tmp/.output', flags)
+        if path.startswith("/@@@@"):
+            full_path = runcommand(path)
+            return os.open(full_path, flags)
         else:
             full_path = self._full_path(path)
             return os.open(full_path, flags)
