@@ -13,21 +13,18 @@ import fuse
 #from fuse import Fuse, FuseOSError
 
 
-def runcommand(path):
-    print path
-    print path[5:]
-    cmd = "gcc -E -xc++-header " + path[5:] + " -o - > /tmp/.output"
-    print cmd
-    subprocess.call(cmd, shell=True)
-    return "/tmp/.output"
-
-
 class Passthrough(fuse.Operations):
     def __init__(self, root):
         self.root = root
 
     # Helpers
     # =======
+
+    def runcommand(self, path):
+        cmd = "gcc -E -xc++-header " + os.path.join(self.root, path[6:]) + " -o - > /tmp/.output"
+        subprocess.call(cmd, shell=True)
+        return "/tmp/.output"
+
 
     def _full_path(self, partial):
         if partial.startswith("/"):
@@ -117,7 +114,7 @@ class Passthrough(fuse.Operations):
 
     def open(self, path, flags):
         if path.startswith("/@@@@"):
-            full_path = runcommand(path)
+            full_path = self.runcommand(path)
             return os.open(full_path, flags)
         else:
             full_path = self._full_path(path)
