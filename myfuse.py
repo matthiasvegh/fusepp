@@ -27,6 +27,9 @@ class Passthrough(fuse.Operations):
         return "/tmp/.output"
 
 
+    def getrealpath(self, path):
+        return self._full_path(path[5:])
+
     def _full_path(self, partial):
         if partial.startswith("/"):
             partial = partial[1:]
@@ -51,7 +54,7 @@ class Passthrough(fuse.Operations):
 
     def getattr(self, path, fh=None):
         if path.startswith("/@@@@"):
-            full_path = self._full_path(path[5:])
+            full_path = self.getrealpath(path)
         else:
             full_path = self._full_path(path)
         st = os.lstat(full_path)
@@ -59,12 +62,13 @@ class Passthrough(fuse.Operations):
                      'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
     def readdir(self, path, fh):
-        if path.startswith("@@@@"):
-            print 'substitute path', path, "->", path[5:]
-            path = '/'+path[5:]
+        if path.startswith("/@@@@"):
+            path = path[6:]
         full_path = self._full_path(path)
 
         dirents = ['.', '..']
+        if path == '/':
+            dirents.append('@@@@')
         if os.path.isdir(full_path):
             dirents.extend(os.listdir(full_path))
         for r in dirents:
@@ -115,7 +119,7 @@ class Passthrough(fuse.Operations):
 
     def open(self, path, flags):
         if path.startswith("/@@@@"):
-            full_path = self.runcommand(path)
+            full_path = self.getrealpath(path)
             return os.open(full_path, flags)
         else:
             full_path = self._full_path(path)
