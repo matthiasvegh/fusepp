@@ -7,6 +7,7 @@ import inspect
 import os
 import sys
 import errno
+import string
 
 import fuse
 
@@ -21,9 +22,22 @@ class Passthrough(fuse.Operations):
     # =======
 
     def runcommand(self, path):
-        start = path[6:]
-        cmd = "gcc -P -E -xc++-header " + os.path.join(self.root, start) + " -o - > /tmp/.output"
-        subprocess.call(cmd, shell=True)
+        cmd_template= string.Template("gcc -P -E -xc++-header $input -o - > /tmp/.output")
+        if path.find("@@@@") == -1:
+            return os.path.join(self.root, path)
+
+        partial = path.rfind("@@@@")
+        base = os.path.join(self.root, path[partial+5:])
+
+        count = path.count("/@@@@")
+        subprocess.call(cmd_template.substitute(input=os.path.join(self.root, base)), shell=True)
+
+        for iteration in range(count-1):
+            subprocess.call("cat /tmp/.output", shell=True)
+            subprocess.call("mv /tmp/.output /tmp/.output2", shell=True)
+            cmd = cmd_template.substitute(input="/tmp/.output2")
+            subprocess.call(cmd, shell=True)
+
         return "/tmp/.output"
 
 
@@ -119,7 +133,7 @@ class Passthrough(fuse.Operations):
 
     def open(self, path, flags):
         if path.startswith("/@@@@"):
-            full_path = self.getrealpath(path)
+            full_path = self.runcommand(path)
             return os.open(full_path, flags)
         else:
             full_path = self._full_path(path)
