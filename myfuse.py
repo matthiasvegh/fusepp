@@ -21,7 +21,8 @@ class Passthrough(fuse.Operations):
     # =======
 
     def runcommand(self, path):
-        cmd = "gcc -E -xc++-header " + os.path.join(self.root, path[6:]) + " -o - > /tmp/.output"
+        start = path[6:]
+        cmd = "gcc -P -E -xc++-header " + os.path.join(self.root, start) + " -o - > /tmp/.output"
         subprocess.call(cmd, shell=True)
         return "/tmp/.output"
 
