@@ -9,6 +9,7 @@ import sys
 import errno
 import string
 import shutil
+import filecmp
 
 import fuse
 
@@ -31,6 +32,8 @@ class Passthrough(fuse.Operations):
             cmd = cmd_template.substitute(input="/tmp/.output2")
             subprocess.call(cmd, shell=True)
 
+    def _arefilessame(self, left, right):
+        return filecmp.cmp(left, right)
 
     def runcommand(self, path):
         cmd_template= string.Template("gcc -P -E -xc++-header $input -o - > /tmp/.output")
