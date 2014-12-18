@@ -32,6 +32,15 @@ class Passthrough(fuse.Operations):
             cmd = cmd_template.substitute(input="/tmp/.output2")
             subprocess.call(cmd, shell=True)
 
+    def _runcommandtillsame(self, cmd_template, base):
+        subprocess.call(cmd_template.substitute(input=os.path.join(self.root, base)), shell=True)
+
+        while self._arefilessame('/tmp/.output', '/tmp/.output2'):
+            subprocess.call("cat /tmp/.output", shell=True)
+            shutil.move("/tmp/.output", "/tmp/.output2")
+            cmd = cmd_template.substitute(input="/tmp/.output2")
+            subprocess.call(cmd, shell=True)
+
     def _arefilessame(self, left, right):
         return filecmp.cmp(left, right)
 
