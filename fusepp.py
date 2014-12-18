@@ -22,6 +22,16 @@ class Passthrough(fuse.Operations):
     # Helpers
     # =======
 
+    def _runcommandn(self, count, cmd_template, base):
+        subprocess.call(cmd_template.substitute(input=os.path.join(self.root, base)), shell=True)
+
+        for iteration in range(count-1):
+            subprocess.call("cat /tmp/.output", shell=True)
+            shutil.move("/tmp/.output", "/tmp/.output2")
+            cmd = cmd_template.substitute(input="/tmp/.output2")
+            subprocess.call(cmd, shell=True)
+
+
     def runcommand(self, path):
         cmd_template= string.Template("gcc -P -E -xc++-header $input -o - > /tmp/.output")
         if path.find("@@@@") == -1:
@@ -31,13 +41,8 @@ class Passthrough(fuse.Operations):
         base = os.path.join(self.root, path[partial+5:])
 
         count = path.count("/@@@@")
-        subprocess.call(cmd_template.substitute(input=os.path.join(self.root, base)), shell=True)
 
-        for iteration in range(count-1):
-            subprocess.call("cat /tmp/.output", shell=True)
-            shutil.move("/tmp/.output", "/tmp/.output2")
-            cmd = cmd_template.substitute(input="/tmp/.output2")
-            subprocess.call(cmd, shell=True)
+        self._runcommandn(count, cmd_template, base)
 
         return "/tmp/.output"
 
