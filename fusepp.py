@@ -8,6 +8,7 @@ import os
 import sys
 import errno
 import string
+import shutil
 
 import fuse
 
@@ -34,7 +35,7 @@ class Passthrough(fuse.Operations):
 
         for iteration in range(count-1):
             subprocess.call("cat /tmp/.output", shell=True)
-            subprocess.call("mv /tmp/.output /tmp/.output2", shell=True)
+            shutil.move("/tmp/.output", "/tmp/.output2")
             cmd = cmd_template.substitute(input="/tmp/.output2")
             subprocess.call(cmd, shell=True)
 
