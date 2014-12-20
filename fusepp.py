@@ -52,11 +52,17 @@ class Passthrough(fuse.Operations):
         partial = path.rfind("@@@@")
         base = os.path.join(self.root, path[partial+5:])
 
+        returnvalue = "/tmp/.output"
+
+        if "@@@@@" in path:
+            self._runcommandtillsame(cmd_template, base)
+            return returnvalue
+
         count = path.count("/@@@@")
 
         self._runcommandn(count, cmd_template, base)
 
-        return "/tmp/.output"
+        return returnvalue
 
 
     def getrealpath(self, path):
