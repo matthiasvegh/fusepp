@@ -30,7 +30,11 @@ class Passthrough(fuse.Operations):
             subprocess.call("cat /tmp/.output", shell=True)
             shutil.move("/tmp/.output", "/tmp/.output2")
             cmd = cmd_template.substitute(input="/tmp/.output2")
-            subprocess.call(cmd, shell=True)
+            p = subprocess.Popen(cmd, shell=True)
+            out, err = p.communicate()
+            if p.returncode != 0:
+                break
+
 
     def _runcommandtillsame(self, cmd_template, base):
         subprocess.call(cmd_template.substitute(input=os.path.join(self.root, base)), shell=True)
