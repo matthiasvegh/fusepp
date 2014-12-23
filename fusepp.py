@@ -26,14 +26,19 @@ class Passthrough(fuse.Operations):
     def _runcommandn(self, count, cmd_template, base):
         subprocess.call(cmd_template.substitute(input=os.path.join(self.root, base)), shell=True)
 
-        for iteration in range(count-1):
+        shutil.copy(os.path.join(self.root, base), "/tmp/.output")
+        for iteration in range(count):
             subprocess.call("cat /tmp/.output", shell=True)
             shutil.move("/tmp/.output", "/tmp/.output2")
             cmd = cmd_template.substitute(input="/tmp/.output2")
             p = subprocess.Popen(cmd, shell=True)
             out, err = p.communicate()
+            print p.returncode
             if p.returncode != 0:
-                break
+                subprocess.call("cat /tmp/.error", shell=True)
+                return "/tmp/.error"
+
+        return "/tmp/.output"
 
 
     def _runcommandtillsame(self, cmd_template, base):
@@ -49,7 +54,7 @@ class Passthrough(fuse.Operations):
         return filecmp.cmp(left, right)
 
     def runcommand(self, path):
-        cmd_template= string.Template("gcc -P -E -xc++-header $input -o - > /tmp/.output")
+        cmd_template= string.Template("gcc -P -E -xc++-header $input -o - > /tmp/.output 2>/tmp/.error")
         if path.find("@@@@") == -1:
             return os.path.join(self.root, path)
 
@@ -64,9 +69,7 @@ class Passthrough(fuse.Operations):
 
         count = path.count("/@@@@")
 
-        self._runcommandn(count, cmd_template, base)
-
-        return returnvalue
+        return self._runcommandn(count, cmd_template, base)
 
 
     def getrealpath(self, path):
@@ -162,6 +165,8 @@ class Passthrough(fuse.Operations):
     def open(self, path, flags):
         if path.startswith("/@@@@"):
             full_path = self.runcommand(path)
+            print "fp: ", full_path
+            subprocess.call("cat /tmp/.error", shell=True)
             return os.open(full_path, flags)
         else:
             full_path = self._full_path(path)
