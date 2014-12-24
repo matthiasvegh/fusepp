@@ -24,7 +24,6 @@ class Passthrough(fuse.Operations):
     # =======
 
     def _runcommandn(self, count, cmd_template, base):
-        subprocess.call(cmd_template.substitute(input=os.path.join(self.root, base)), shell=True)
 
         shutil.copy(os.path.join(self.root, base), "/tmp/.output")
         for iteration in range(count):
