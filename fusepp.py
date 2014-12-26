@@ -10,15 +10,42 @@ import errno
 import string
 import shutil
 import filecmp
+import threading
 
 import fuse
 
 #from fuse import Fuse, FuseOSError
 
+def _max(iterable):
+    """
+    Max is zero, even if iterable is empty
+
+    >>> _max([])
+    0
+    >>> _max([5])
+    5
+    >>> _max([1, 2])
+    2
+    """
+    try:
+        return max(iterable)
+    except ValueError:
+        return 0
+
 
 class Filesystem(fuse.Operations):
     def __init__(self, root):
         self.root = root
+        self._rwlock = threading.Lock()
+        self._openfds = dict()
+        self._openfiles = dict()
+
+    def _getnewfd(self, path):
+        with self._rwlock:
+            nextavailable = _max(self._openfds.keys()) +1
+            self._openfds[nextavailable] = path
+            self._openfiles[path] = nextavailable
+            return nextavailable
 
     def _getrealpath(self, path):
         """
@@ -46,12 +73,16 @@ class Filesystem(fuse.Operations):
     def readdir(self, path, fh):
         return ['.', '..'] + os.listdir(self._getrealpath(path))
 
+    def open(self, path, flags):
+        fd = self._getnewfd(path)
+        print path+": ", fd
+        return fd
+
     # unused features
     access = None
     flush = None
     getxattr = None
     listxattr = None
-    open = None
     opendir = None
     read = None
     release = None
