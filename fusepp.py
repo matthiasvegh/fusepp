@@ -75,8 +75,14 @@ class Filesystem(fuse.Operations):
 
     def open(self, path, flags):
         fd = self._getnewfd(path)
-        print path+": ", fd
         return fd
+
+    def release(self, path, fh):
+        with self._rwlock:
+            assert(self._openfds[fh] == path)
+            assert(self._openfiles[path] == fh)
+            del self._openfds[fh]
+            del self._openfiles[path]
 
     # unused features
     access = None
@@ -85,7 +91,6 @@ class Filesystem(fuse.Operations):
     listxattr = None
     opendir = None
     read = None
-    release = None
     releasedir = None
 
 def main(mountpoint, root):
