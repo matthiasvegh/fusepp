@@ -22,11 +22,26 @@ class Filesystem(fuse.Operations):
 
     def _getrealpath(self, path):
         """
+        Get true path for proxy requests
+
         >>> fs=Filesystem('/foo')
         >>> fs._getrealpath('/bar')
         '/foo/bar'
+        >>> fs._getrealpath('/')
+        '/foo/'
         """
         return os.path.join(self.root, path[1:])
+
+    def getattr(self, path, fh=None):
+        st = os.lstat(self._getrealpath(path))
+        return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
+            'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+
+    def statfs(self, path):
+        stv = os.statvfs(self._getrealpath(path))
+        return dict((key, gettattr(stv, key)) for key in ('f_bavail', 'f_bfree',
+            'f_blocks', 'f_bsize', 'f_avail', 'f_ffree', 'f_files', 'f_flag',
+            'f_frsize', 'f_namemax'))
 
     def readdir(self, path, fh):
         return ['.', '..'] + os.listdir(self._getrealpath(path))
@@ -34,16 +49,13 @@ class Filesystem(fuse.Operations):
     # unused features
     access = None
     flush = None
-    getattr = None
     getxattr = None
     listxattr = None
     open = None
     opendir = None
     read = None
-    readdir = None
     release = None
     releasedir = None
-    statfs = None
 
 def main(mountpoint, root):
     fuse.FUSE(Filesystem(root), mountpoint, foreground=True)
