@@ -20,6 +20,17 @@ class Filesystem(fuse.Operations):
     def __init__(self, root):
         self.root = root
 
+    def _getrealpath(self, path):
+        """
+        >>> fs=Filesystem('/foo')
+        >>> fs._getrealpath('/bar')
+        '/foo/bar'
+        """
+        return os.path.join(self.root, path[1:])
+
+    def readdir(self, path, fh):
+        return ['.', '..'] + os.listdir(self._getrealpath(path))
+
     # unused features
     access = None
     flush = None
@@ -38,4 +49,6 @@ def main(mountpoint, root):
     fuse.FUSE(Filesystem(root), mountpoint, foreground=True)
 
 if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
     main(sys.argv[2], sys.argv[1])
