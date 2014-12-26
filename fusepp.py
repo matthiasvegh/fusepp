@@ -20,9 +20,22 @@ class Filesystem(fuse.Operations):
     def __init__(self, root):
         self.root = root
 
+    # unused features
+    access = None
+    flush = None
+    getattr = None
+    getxattr = None
+    listxattr = None
+    open = None
+    opendir = None
+    read = None
+    readdir = None
+    release = None
+    releasedir = None
+    statfs = None
 
 def main(mountpoint, root):
-    fuse.FUSE(Passthrough(root), mountpoint, foreground=True)
+    fuse.FUSE(Filesystem(root), mountpoint, foreground=True)
 
 if __name__ == '__main__':
     main(sys.argv[2], sys.argv[1])
