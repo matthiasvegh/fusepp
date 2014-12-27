@@ -74,12 +74,12 @@ class Filesystem(fuse.Operations):
         return ['.', '..'] + os.listdir(self._getrealpath(path))
 
     def open(self, path, flags):
+        # Run command and return fd to it
         fd = self._getnewfd(path)
         return fd
 
     def release(self, path, fh):
         with self._rwlock:
-            assert(self._openfds[fh] == path)
             assert(self._openfiles[path] == fh)
             del self._openfds[fh]
             del self._openfiles[path]
