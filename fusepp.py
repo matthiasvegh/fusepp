@@ -9,6 +9,7 @@ import sys
 import errno
 import string
 import shutil
+import tempfile
 import filecmp
 import threading
 
@@ -43,7 +44,7 @@ class Filesystem(fuse.Operations):
     def _getnewfd(self, path):
         with self._rwlock:
             nextavailable = _max(self._openfds.keys()) +1
-            self._openfds[nextavailable] = path
+            self._openfds[nextavailable] = tempfile.mkstemp()
             self._openfiles[path] = nextavailable
             return nextavailable
 
@@ -81,6 +82,7 @@ class Filesystem(fuse.Operations):
     def release(self, path, fh):
         with self._rwlock:
             assert(self._openfiles[path] == fh)
+            # remove tmp
             del self._openfds[fh]
             del self._openfiles[path]
 
