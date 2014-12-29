@@ -41,10 +41,15 @@ class Filesystem(fuse.Operations):
         self._openfds = dict()
         self._openfiles = dict()
 
+    def _runcommand(self, path, output):
+        pass
+
     def _getnewfd(self, path):
         with self._rwlock:
             nextavailable = _max(self._openfds.keys()) +1
             self._openfds[nextavailable] = tempfile.mkstemp()
+            name = self._openfds[nextavailable][1]
+            self._runcommand(path, name)
             self._openfiles[path] = nextavailable
             return nextavailable
 
