@@ -91,13 +91,16 @@ class Filesystem(fuse.Operations):
             del self._openfds[fh]
             del self._openfiles[path]
 
+    def read(self, path, size, offset, fh):
+        assert(self._openfiles[path] = fh)
+        pass
+
     # unused features
     access = None
     flush = None
     getxattr = None
     listxattr = None
     opendir = None
-    read = None
     releasedir = None
 
 def main(mountpoint, root):
