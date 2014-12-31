@@ -92,8 +92,12 @@ class Filesystem(fuse.Operations):
             del self._openfiles[path]
 
     def read(self, path, size, offset, fh):
-        assert(self._openfiles[path] = fh)
-        pass
+        assert(self._openfiles[path] == fh)
+        fd = os.open(self._openfds[fh][1], os.O_RDONLY)
+        os.lseek(fd, offset, os.SEEK_SET)
+        buf = os.read(fd, size)
+        os.close(fd)
+        return buf
 
     # unused features
     access = None
