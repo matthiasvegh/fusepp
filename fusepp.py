@@ -42,10 +42,17 @@ class Filesystem(fuse.Operations):
         self._openfiles = dict()
 
     def _runcommand(self, path, output):
-        pass
+        cmd_template = string.Template('g++ -P -E -xc++ -o $output $input')
+
+        fullpath = self._getrealpath(path)
+
+        cmd = cmd_template.substitute(output=output, input=fullpath)
+        subprocess.call(cmd, shell=True)
+
 
     def _getnewfd(self, path):
         with self._rwlock:
+            # TODO: Recursive locking issues, maybe remove lock entirely?
             nextavailable = _max(self._openfds.keys()) +1
             self._openfds[nextavailable] = tempfile.mkstemp()
             name = self._openfds[nextavailable][1]
