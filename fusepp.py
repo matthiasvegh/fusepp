@@ -52,13 +52,12 @@ class Filesystem(fuse.Operations):
 
     def _getnewfd(self, path):
         with self._rwlock:
-            # TODO: Recursive locking issues, maybe remove lock entirely?
             nextavailable = _max(self._openfds.keys()) +1
             self._openfds[nextavailable] = tempfile.mkstemp()
             name = self._openfds[nextavailable][1]
-            self._runcommand(path, name)
             self._openfiles[path] = nextavailable
-            return nextavailable
+        self._runcommand(path, name)
+        return nextavailable
 
     def _getrealpath(self, path):
         """
