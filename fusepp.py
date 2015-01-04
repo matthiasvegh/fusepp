@@ -6,6 +6,7 @@ import subprocess
 import inspect
 import os
 import sys
+import stat
 import errno
 import string
 import shutil
@@ -73,8 +74,12 @@ class Filesystem(fuse.Operations):
 
     def getattr(self, path, fh=None):
         st = os.lstat(self._getrealpath(path))
-        return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
+        answer = dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
             'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+
+        answer['st_size'] = 0
+
+        return answer
 
     def statfs(self, path):
         stv = os.statvfs(self._getrealpath(path))
@@ -86,19 +91,25 @@ class Filesystem(fuse.Operations):
     def readdir(self, path, fh):
         return ['.', '..'] + os.listdir(self._getrealpath(path))
 
-    def open(self, path, flags):
+    def open(self, path, fi):
         # Run command and return fd to it
         fd = self._getnewfd(path)
-        return fd
 
-    def release(self, path, fh):
+        fi.fh = fd
+        fi.direct_io = True
+        # No OS caching allowed, all reads must go through us
+
+    def release(self, path, fi):
+        fh = fi.fh
         with self._rwlock:
             assert(self._openfiles[path] == fh)
             os.remove(self._openfds[fh][1])
             del self._openfds[fh]
             del self._openfiles[path]
 
-    def read(self, path, size, offset, fh):
+    def read(self, path, size, offset, fi):
+        print 'reading', path
+        fh = fi.fh
         assert(self._openfiles[path] == fh)
         fd = os.open(self._openfds[fh][1], os.O_RDONLY)
         os.lseek(fd, offset, os.SEEK_SET)
@@ -115,7 +126,7 @@ class Filesystem(fuse.Operations):
     releasedir = None
 
 def main(mountpoint, root):
-    fuse.FUSE(Filesystem(root), mountpoint, foreground=True)
+    fuse.FUSE(Filesystem(root), mountpoint, raw_fi=True, foreground=True)
 
 if __name__ == '__main__':
     import doctest
