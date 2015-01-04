@@ -42,7 +42,7 @@ class Filesystem(fuse.Operations):
         self._openfiles = dict()
 
     def _runcommand(self, path, output):
-        cmd_template = string.Template('g++ -P -E -xc++ -o $output $input')
+        cmd_template = string.Template('g++ -P -E -xc++ -o - $input > $output')
 
         fullpath = self._getrealpath(path)
 
@@ -93,7 +93,7 @@ class Filesystem(fuse.Operations):
     def release(self, path, fh):
         with self._rwlock:
             assert(self._openfiles[path] == fh)
-            # remove tmp
+            os.remove(self._openfds[fh][1])
             del self._openfds[fh]
             del self._openfiles[path]
 
