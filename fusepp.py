@@ -78,9 +78,10 @@ class Filesystem(fuse.Operations):
 
     def statfs(self, path):
         stv = os.statvfs(self._getrealpath(path))
-        return dict((key, gettattr(stv, key)) for key in ('f_bavail', 'f_bfree',
-            'f_blocks', 'f_bsize', 'f_avail', 'f_ffree', 'f_files', 'f_flag',
+        answer =  dict((key, getattr(stv, key)) for key in ('f_bavail', 'f_bfree',
+            'f_blocks', 'f_bsize', 'f_favail', 'f_ffree', 'f_files', 'f_flag',
             'f_frsize', 'f_namemax'))
+        return answer
 
     def readdir(self, path, fh):
         return ['.', '..'] + os.listdir(self._getrealpath(path))
