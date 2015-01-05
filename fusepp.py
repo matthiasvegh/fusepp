@@ -43,12 +43,18 @@ class Filesystem(fuse.Operations):
         self._openfds = dict()
         self._openfiles = dict()
 
-    def _runcommand(self, path, output):
-        cmd_template = string.Template('g++ -P -E -xc++ -o - $input > $output')
+    def getextraargs(self, pid):
+        process = psutil.Process(pid)
+        args = process.cmdline
+        return ''
+
+
+    def _runcommand(self, path, output, extraargs=''):
+        cmd_template = string.Template('g++ -P -E -xc++ $extraargs -o -  - < $input > $output')
 
         fullpath = self._getrealpath(path)
 
-        cmd = cmd_template.substitute(output=output, input=fullpath)
+        cmd = cmd_template.substitute(output=output, input=fullpath, extraargs=extraargs)
         subprocess.call(cmd, shell=True)
 
         original_size = self.getattr(path)['st_size']
@@ -62,13 +68,15 @@ class Filesystem(fuse.Operations):
             o.write(extrachars)
 
 
-    def _getnewfd(self, path):
+    def _getnewfd(self, path, pid):
         with self._rwlock:
             nextavailable = _max(self._openfds.keys()) +1
             self._openfds[nextavailable] = tempfile.mkstemp()
             name = self._openfds[nextavailable][1]
             self._openfiles[path] = nextavailable
-        self._runcommand(path, name)
+
+        extraargs = self.getextraargs(pid)
+        self._runcommand(path, name, extraargs)
         return nextavailable
 
     def _getrealpath(self, path):
@@ -102,7 +110,8 @@ class Filesystem(fuse.Operations):
 
     def open(self, path, fi):
         # Run command and return fd to it
-        fd = self._getnewfd(path)
+        pid = fuse.fuse_get_context()[2]
+        fd = self._getnewfd(path, pid)
 
         fi.fh = fd
         fi.direct_io = True
@@ -117,9 +126,6 @@ class Filesystem(fuse.Operations):
             del self._openfiles[path]
 
     def read(self, path, size, offset, fi):
-        pid = fuse.fuse_get_context()[2]
-        invokingProcess = psutil.Process(pid)
-        print "Reading for", invokingProcess.cmdline
         fh = fi.fh
         assert(self._openfiles[path] == fh)
         fd = os.open(self._openfds[fh][1], os.O_RDONLY)
