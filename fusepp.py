@@ -96,8 +96,9 @@ class Filesystem(fuse.Operations):
         answer = dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
             'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
-        size = self._runcommand(path)
-        answer['st_size'] = size
+        if stat.S_ISREG(answer['st_mode']):
+            size = self._runcommand(path)
+            answer['st_size'] = size
 
         return answer
 
