@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import filecmp
 import threading
+import psutil
 
 import fuse
 
@@ -108,7 +109,10 @@ class Filesystem(fuse.Operations):
             del self._openfiles[path]
 
     def read(self, path, size, offset, fi):
-        print 'reading', path
+        print 'read'
+        pid = fuse.fuse_get_context()[2]
+        invokingProcess = psutil.Process(pid)
+        print "Reading for", invokingProcess.cmdline
         fh = fi.fh
         assert(self._openfiles[path] == fh)
         fd = os.open(self._openfds[fh][1], os.O_RDONLY)
