@@ -51,6 +51,16 @@ class Filesystem(fuse.Operations):
         cmd = cmd_template.substitute(output=output, input=fullpath)
         subprocess.call(cmd, shell=True)
 
+        original_size = self.getattr(path)['st_size']
+        current_size = os.lstat(output).st_size
+
+        extrachars = ''
+        for i in range(original_size - current_size):
+            extrachars += '\n'
+
+        with open(output, 'a') as o:
+            o.write(extrachars)
+
 
     def _getnewfd(self, path):
         with self._rwlock:
@@ -77,8 +87,6 @@ class Filesystem(fuse.Operations):
         st = os.lstat(self._getrealpath(path))
         answer = dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
             'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
-
-        answer['st_size'] = 0
 
         return answer
 
@@ -109,7 +117,6 @@ class Filesystem(fuse.Operations):
             del self._openfiles[path]
 
     def read(self, path, size, offset, fi):
-        print 'read'
         pid = fuse.fuse_get_context()[2]
         invokingProcess = psutil.Process(pid)
         print "Reading for", invokingProcess.cmdline
