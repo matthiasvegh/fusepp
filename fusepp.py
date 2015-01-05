@@ -14,6 +14,7 @@ import tempfile
 import filecmp
 import threading
 import psutil
+import time
 
 import fuse
 
@@ -45,11 +46,19 @@ class Filesystem(fuse.Operations):
 
     def getextraargs(self, pid):
         process = psutil.Process(pid)
-        args = process.cmdline
-        return ''
+        args = process.cmdline()
 
+        extraargs = ''
 
-    def _runcommand(self, path, output, extraargs=''):
+        for arg in args:
+            pass
+
+        return extraargs
+
+    def _runcommand(self, path, output=None, extraargs=''):
+        if output is None:
+            output = tempfile.mkstemp()[1]
+
         cmd_template = string.Template('g++ -P -E -xc++ $extraargs -o -  - < $input > $output')
 
         fullpath = self._getrealpath(path)
@@ -57,16 +66,7 @@ class Filesystem(fuse.Operations):
         cmd = cmd_template.substitute(output=output, input=fullpath, extraargs=extraargs)
         subprocess.call(cmd, shell=True)
 
-        original_size = self.getattr(path)['st_size']
-        current_size = os.lstat(output).st_size
-
-        extrachars = ''
-        for i in range(original_size - current_size):
-            extrachars += '\n'
-
-        with open(output, 'a') as o:
-            o.write(extrachars)
-
+        return os.lstat(output).st_size
 
     def _getnewfd(self, path, pid):
         with self._rwlock:
@@ -95,6 +95,9 @@ class Filesystem(fuse.Operations):
         st = os.lstat(self._getrealpath(path))
         answer = dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
             'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+
+        size = self._runcommand(path)
+        answer['st_size'] = size
 
         return answer
 
