@@ -59,11 +59,11 @@ class Filesystem(fuse.Operations):
         if output is None:
             output = tempfile.mkstemp()[1]
 
-        cmd_template = string.Template('g++ -P -E -xc++ $extraargs -o -  - < $input > $output')
+        cmd_template = string.Template('g++ -P -E -xc++ $extraargs -o -  - < $input > $output 2>$error')
 
         fullpath = self._getrealpath(path)
 
-        cmd = cmd_template.substitute(output=output, input=fullpath, extraargs=extraargs)
+        cmd = cmd_template.substitute(output=output, error='/dev/null', input=fullpath, extraargs=extraargs)
         subprocess.call(cmd, shell=True)
 
         return os.lstat(output).st_size
