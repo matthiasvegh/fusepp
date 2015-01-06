@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import filecmp
 import threading
+from _threading_local import local
 import psutil
 import time
 
@@ -50,8 +51,14 @@ class Filesystem(fuse.Operations):
 
         extraargs = ''
 
-        for arg in args:
-            pass
+        index = 0
+        length = len(args)
+        while index < length:
+            arg = args[index]
+            if arg.startswith('-D') or arg.startswith('-I') or arg.startswith('-isystem'):
+                extraargs += ' ' + arg + args[index+1]
+                index = index+1
+            index = index+1
 
         return extraargs
 
@@ -59,7 +66,7 @@ class Filesystem(fuse.Operations):
         if output is None:
             output = tempfile.mkstemp()[1]
 
-        cmd_template = string.Template('g++ -P -E -xc++ $extraargs -o -  - < $input > $output 2>$error')
+        cmd_template = string.Template('g++ -P -E -xc++ $extraargs $input -o $output 2>$error')
 
         fullpath = self._getrealpath(path)
 
