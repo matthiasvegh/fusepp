@@ -13,7 +13,8 @@ import shutil
 import tempfile
 import filecmp
 import threading
-from _threading_local import local
+import logging
+import datetime
 import psutil
 import time
 
@@ -44,6 +45,7 @@ class Filesystem(fuse.Operations):
         self._rwlock = threading.Lock()
         self._openfds = dict()
         self._openfiles = dict()
+        logging.getLogger().setLevel(logging.DEBUG)
 
     def getextraargs(self, pid):
         process = psutil.Process(pid)
@@ -60,6 +62,11 @@ class Filesystem(fuse.Operations):
                 index = index+1
             index = index+1
 
+        if len(extraargs) > 0:
+            logging.info('Appending extraargs inherited from %d: %s', pid, extrarags)
+        else:
+            logging.info('No extraargs inherited from %d', pid)
+
         return extraargs
 
     def _runcommand(self, path, output=None, extraargs=''):
@@ -71,12 +78,21 @@ class Filesystem(fuse.Operations):
         fullpath = self._getrealpath(path)
 
         cmd = cmd_template.substitute(output=output, error='/dev/null', input=fullpath, extraargs=extraargs)
-        subprocess.call(cmd, shell=True)
+
+        logging.info('Running command: %s', cmd)
+
+        starttime = datetime.datetime.now().isoformat()
+
+        err = subprocess.call(cmd, shell=True)
+
+        logging.info('command (%s) started at %s returned with status: %d', cmd, starttime, err)
 
         return os.lstat(output).st_size
 
     def _getnewfd(self, path, pid):
+        logging.debug('_getnewfd called, awaiting lock')
         with self._rwlock:
+            logging.debug('_getnewfd got lock')
             nextavailable = _max(self._openfds.keys()) +1
             self._openfds[nextavailable] = tempfile.mkstemp()
             name = self._openfds[nextavailable][1]
@@ -99,17 +115,20 @@ class Filesystem(fuse.Operations):
         return os.path.join(self.root, path[1:])
 
     def getattr(self, path, fh=None):
+        logging.info('Fetching attributes for %s', path)
         st = os.lstat(self._getrealpath(path))
         answer = dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
             'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
         if stat.S_ISREG(answer['st_mode']):
+            logging.debug('%s seems to be regular, running command to determine true size', path)
             size = self._runcommand(path)
             answer['st_size'] = size
 
         return answer
 
     def statfs(self, path):
+        logging.info('statfs for %s', path)
         stv = os.statvfs(self._getrealpath(path))
         answer =  dict((key, getattr(stv, key)) for key in ('f_bavail', 'f_bfree',
             'f_blocks', 'f_bsize', 'f_favail', 'f_ffree', 'f_files', 'f_flag',
@@ -117,11 +136,13 @@ class Filesystem(fuse.Operations):
         return answer
 
     def readdir(self, path, fh):
+        logging.info('readdir for %s', path)
         return ['.', '..'] + os.listdir(self._getrealpath(path))
 
     def open(self, path, fi):
         # Run command and return fd to it
         pid = fuse.fuse_get_context()[2]
+        logging.info('open %s for %d', path, pid)
         fd = self._getnewfd(path, pid)
 
         fi.fh = fd
@@ -129,14 +150,18 @@ class Filesystem(fuse.Operations):
         # No OS caching allowed, all reads must go through us
 
     def release(self, path, fi):
+        logging.info('releasing %s')
         fh = fi.fh
+        logging.debug('release awaiting lock')
         with self._rwlock:
+            logging.debug('release acquired lock')
             assert(self._openfiles[path] == fh)
             os.remove(self._openfds[fh][1])
             del self._openfds[fh]
             del self._openfiles[path]
 
     def read(self, path, size, offset, fi):
+        logging.info('read for %s, size: %d, offset: %d', path, size, offset)
         fh = fi.fh
         assert(self._openfiles[path] == fh)
         fd = os.open(self._openfds[fh][1], os.O_RDONLY)
