@@ -150,7 +150,7 @@ class Filesystem(fuse.Operations):
         # No OS caching allowed, all reads must go through us
 
     def release(self, path, fi):
-        logging.info('releasing %s')
+        logging.info('releasing %s', path)
         fh = fi.fh
         logging.debug('release awaiting lock')
         with self._rwlock:
