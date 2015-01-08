@@ -63,7 +63,7 @@ class Filesystem(fuse.Operations):
             index = index+1
 
         if len(extraargs) > 0:
-            logging.info('Appending extraargs inherited from %d: %s', pid, extrarags)
+            logging.info('Appending extraargs inherited from %d: %s', pid, extraargs)
         else:
             logging.info('No extraargs inherited from %d', pid)
 
