@@ -58,8 +58,11 @@ class Filesystem(fuse.Operations):
         while index < length:
             arg = args[index]
             if arg.startswith('-D') or arg.startswith('-I') or arg.startswith('-isystem'):
-                extraargs += ' ' + arg + args[index+1]
-                index = index+1
+                if len(arg) == 2:
+                    extraargs += ' ' + arg + args[index+1]
+                    index = index+1
+                else:
+                    extraargs += ' ' + arg
             index = index+1
 
         if len(extraargs) > 0:
