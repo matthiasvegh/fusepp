@@ -65,3 +65,7 @@ with "preparation-for-c" being:
 #define C 1
 ```
 This still isn't ideal, but the filesystem from which we include could generate the included file we need. This project explores this possibility.
+
+Usage
+-----
+Simply run as `./fusepp.py MOUNTPOINT PROXYDIRECTORY` where MOUNTPOINT is where you would like the filesystem to be visible, and PROXYDIRECTORY is the underlying filesystem
