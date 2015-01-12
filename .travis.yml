@@ -1,0 +1,12 @@
+language: python
+python:
+    - "2.7"
+
+script:
+    ./makepackage.sh
+
+notifications:
+    email:
+        - matyas.vegh@gmail.com
+    on_success: change
+    on_failure: always
