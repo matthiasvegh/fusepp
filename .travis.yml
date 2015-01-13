@@ -2,8 +2,12 @@ language: python
 python:
     - "2.7"
 
-script:
+install:
     ./makepackage.sh
+
+script:
+    sudo dpkg -i ./.build/fusepp_0.1-1.deb
+    sudo apt-get -f install --yes
 
 notifications:
     email:
