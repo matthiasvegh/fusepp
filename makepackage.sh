@@ -25,7 +25,7 @@ Package: fusepp
 Version: 0.1-1
 Section: devel
 Priority: optional
-Architecture: i386
+Architecture: all
 Depends: python (>= 2.7.0), python-psutil, python-fuse
 Maintainer: Matthias Vegh matyas.vegh@gmail.com
 Description: fusepp
