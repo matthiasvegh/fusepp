@@ -2,6 +2,7 @@
 
 from __future__ import with_statement
 
+import optparse
 import subprocess
 import inspect
 import os
@@ -185,6 +186,16 @@ def main(mountpoint, root):
     fuse.FUSE(Filesystem(root), mountpoint, raw_fi=True, foreground=True)
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    main(sys.argv[2], sys.argv[1])
+
+    parser = optparse.OptionParser(
+            usage="%prog",
+            description="Preprocessor filesystem")
+    parser.add_option("-t", "--test", dest="test", action="store_true", default=False, help="Run tests and exit")
+
+    (options, args) = parser.parse_args()
+
+    if options.test:
+        import doctest
+        doctest.testmod()
+    else:
+        main(sys.argv[2], sys.argv[1])
