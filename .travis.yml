@@ -8,6 +8,7 @@ install:
 script:
     - sudo dpkg -i ./.build/fusepp_0.1-1.deb || true
     - sudo apt-get -f install --yes
+    - sudo pip install psutil --upgrade
     - /usr/local/bin/fusepp.py --test
 
 notifications:
