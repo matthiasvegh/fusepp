@@ -11,6 +11,8 @@ script:
     - sudo pip install psutil --upgrade
     - sudo pip install fusepy
     - /usr/local/bin/fusepp.py --test
+    - sudo dpkg -r fusepp
+    - [ ! -f /usr/local/bin/fusepp.py ]
 
 notifications:
     email:
